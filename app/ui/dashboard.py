@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import gradio as gr
 
 from app.data.loader import DatasetPreview, list_loaded_datasets, load_dataset
@@ -14,11 +16,11 @@ def build_dashboard() -> gr.Blocks:
             dataset_name = gr.Textbox(label="Hugging Face dataset name")
             dataset_split = gr.Textbox(label="Split", value="train")
             dataset_limit = gr.Number(label="Limit rows", value=None, precision=0)
-            dataset_sample = gr.Number(label="Sample rows (random)", value=None, precision=0)
-            id_column = gr.Textbox(label="ID column (optional)", value="id")
-            image_column = gr.Textbox(label="Image column (optional)", value="images")
-            metadata_column = gr.Textbox(label="Metadata text column (optional)", value="metadata")
-            unimarc_column = gr.Textbox(label="Unimarc column (optional)", value="unimarc")
+            gr.Markdown("### Column mapping (optional)")
+            id_column = gr.Textbox(label="ID column", value="id")
+            image_column = gr.Textbox(label="Image column", value="images")
+            metadata_column = gr.Textbox(label="Metadata text column", value="metadata")
+            unimarc_column = gr.Textbox(label="Unimarc column", value="unimarc")
             load_button = gr.Button("Load dataset")
             dataset_status = gr.JSON(label="Loaded dataset")
             dataset_list = gr.JSON(label="Cached datasets")
@@ -27,7 +29,6 @@ def build_dashboard() -> gr.Blocks:
                 name: str,
                 split: str,
                 limit: float | None,
-                sample: float | None,
                 id_col: str,
                 image_col: str,
                 metadata_col: str,
@@ -38,7 +39,6 @@ def build_dashboard() -> gr.Blocks:
                     split=split,
                     source="hf",
                     limit=int(limit) if limit else None,
-                    sample=int(sample) if sample else None,
                     id_column=id_col or None,
                     image_column=image_col or None,
                     metadata_column=metadata_col or None,
@@ -53,7 +53,6 @@ def build_dashboard() -> gr.Blocks:
                     dataset_name,
                     dataset_split,
                     dataset_limit,
-                    dataset_sample,
                     id_column,
                     image_column,
                     metadata_column,
@@ -69,7 +68,7 @@ def build_dashboard() -> gr.Blocks:
 
             def load_local_dataset_ui(uploaded, name: str) -> dict:
                 path = _extract_upload_path(uploaded)
-                preview = DatasetPreview(name=name or path, split="train", source="local", path=path)
+                preview = DatasetPreview(name=name or Path(path).name, split="train", source="local", path=path)
                 load_dataset(preview)
                 return preview.__dict__
 
@@ -106,5 +105,5 @@ def _extract_upload_path(uploaded) -> str:
     if isinstance(uploaded, list) and uploaded:
         uploaded = uploaded[0]
     if hasattr(uploaded, "name"):
-        return uploaded.name
+        return str(Path(uploaded.name).parent)
     return str(uploaded)

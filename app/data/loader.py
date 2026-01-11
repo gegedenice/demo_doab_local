@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from datasets import load_dataset
+from datasets import load_dataset as hf_load_dataset
 
 
 @dataclass
@@ -14,7 +14,6 @@ class DatasetPreview:
     split: str = "train"
     source: str = "hf"
     limit: int | None = None
-    sample: int | None = None
     path: str | None = None
     id_column: str | None = None
     image_column: str | None = None
@@ -31,17 +30,14 @@ def list_loaded_datasets() -> list[DatasetPreview]:
 
 def load_dataset(request: DatasetPreview) -> DatasetPreview:
     if request.source == "hf":
-        dataset = load_dataset(request.name, split=request.split)
-        if request.sample:
-            dataset = dataset.shuffle(seed=42).select(range(request.sample))
-        elif request.limit:
-            dataset = dataset.select(range(request.limit))
+        streaming = request.limit is not None
+        dataset = hf_load_dataset(request.name, split=request.split, streaming=streaming)
         id_column = request.id_column or "id"
         image_column = request.image_column or "images"
         metadata_column = request.metadata_column or "metadata"
         unimarc_column = request.unimarc_column or "unimarc"
         records = []
-        for idx, item in enumerate(dataset):
+        for idx, item in enumerate(_iter_dataset(dataset, request.limit)):
             images_value = item.get(image_column) or item.get("image")
             images = images_value if isinstance(images_value, list) else [images_value] if images_value else []
             records.append({
@@ -62,8 +58,11 @@ def load_dataset(request: DatasetPreview) -> DatasetPreview:
             split=request.split,
             source=request.source,
             limit=request.limit,
-            sample=request.sample,
             path=request.path,
+            id_column=request.id_column,
+            image_column=request.image_column,
+            metadata_column=request.metadata_column,
+            unimarc_column=request.unimarc_column,
         )
     else:
         raise ValueError("Only Hugging Face or local datasets are supported in this mock loader.")
@@ -88,3 +87,13 @@ def _load_local_dataset(root_path: Path) -> list[dict[str, Any]]:
             "unimarc_record": combined_text,
         })
     return records
+
+
+def _iter_dataset(dataset, limit: int | None):
+    if limit is None:
+        yield from dataset
+        return
+    for idx, item in enumerate(dataset):
+        if idx >= limit:
+            break
+        yield item
