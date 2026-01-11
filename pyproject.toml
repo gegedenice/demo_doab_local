@@ -1,0 +1,20 @@
+[project]
+name = "demo-doab-local"
+version = "0.1.0"
+description = "Evaluation app for VLM/SLM bibliographic record workflows"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+  "gradio>=4.44.0",
+  "pydantic>=2.8.0",
+  "sqlalchemy>=2.0.30",
+  "datasets>=2.20.0",
+  "requests>=2.32.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2.0"]
+
+[tool.ruff]
+line-length = 100
