@@ -15,24 +15,50 @@ def build_dashboard() -> gr.Blocks:
             dataset_split = gr.Textbox(label="Split", value="train")
             dataset_limit = gr.Number(label="Limit rows", value=None, precision=0)
             dataset_sample = gr.Number(label="Sample rows (random)", value=None, precision=0)
+            id_column = gr.Textbox(label="ID column (optional)", value="id")
+            image_column = gr.Textbox(label="Image column (optional)", value="images")
+            metadata_column = gr.Textbox(label="Metadata text column (optional)", value="metadata")
+            unimarc_column = gr.Textbox(label="Unimarc column (optional)", value="unimarc")
             load_button = gr.Button("Load dataset")
             dataset_status = gr.JSON(label="Loaded dataset")
             dataset_list = gr.JSON(label="Cached datasets")
 
-            def load_dataset_ui(name: str, split: str, limit: float | None, sample: float | None) -> dict:
+            def load_dataset_ui(
+                name: str,
+                split: str,
+                limit: float | None,
+                sample: float | None,
+                id_col: str,
+                image_col: str,
+                metadata_col: str,
+                unimarc_col: str,
+            ) -> dict:
                 preview = DatasetPreview(
                     name=name,
                     split=split,
                     source="hf",
                     limit=int(limit) if limit else None,
                     sample=int(sample) if sample else None,
+                    id_column=id_col or None,
+                    image_column=image_col or None,
+                    metadata_column=metadata_col or None,
+                    unimarc_column=unimarc_col or None,
                 )
                 load_dataset(preview)
                 return preview.__dict__
 
             load_button.click(
                 load_dataset_ui,
-                inputs=[dataset_name, dataset_split, dataset_limit, dataset_sample],
+                inputs=[
+                    dataset_name,
+                    dataset_split,
+                    dataset_limit,
+                    dataset_sample,
+                    id_column,
+                    image_column,
+                    metadata_column,
+                    unimarc_column,
+                ],
                 outputs=dataset_status,
             )
             dataset_list.value = [preview.__dict__ for preview in list_loaded_datasets()]

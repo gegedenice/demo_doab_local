@@ -16,6 +16,10 @@ class DatasetPreview:
     limit: int | None = None
     sample: int | None = None
     path: str | None = None
+    id_column: str | None = None
+    image_column: str | None = None
+    metadata_column: str | None = None
+    unimarc_column: str | None = None
 
 
 _LOADED_DATASETS: dict[str, list[dict[str, Any]]] = {}
@@ -32,13 +36,19 @@ def load_dataset(request: DatasetPreview) -> DatasetPreview:
             dataset = dataset.shuffle(seed=42).select(range(request.sample))
         elif request.limit:
             dataset = dataset.select(range(request.limit))
+        id_column = request.id_column or "id"
+        image_column = request.image_column or "images"
+        metadata_column = request.metadata_column or "metadata"
+        unimarc_column = request.unimarc_column or "unimarc"
         records = []
         for idx, item in enumerate(dataset):
+            images_value = item.get(image_column) or item.get("image")
+            images = images_value if isinstance(images_value, list) else [images_value] if images_value else []
             records.append({
-                "id": str(item.get("id", idx)),
-                "images": item.get("images") or item.get("image") or [],
-                "metadata_text": item.get("metadata", ""),
-                "unimarc_record": item.get("unimarc", ""),
+                "id": str(item.get(id_column, idx)),
+                "images": images,
+                "metadata_text": item.get(metadata_column, ""),
+                "unimarc_record": item.get(unimarc_column, ""),
             })
         _LOADED_DATASETS[request.name] = records
     elif request.source == "local":
